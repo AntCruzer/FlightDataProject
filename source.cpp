@@ -5,15 +5,16 @@
 
 
 
-// CONSTANTS
-#define BUF_SIZE 30
-#define LOOP_AMT 5
+// CONSTANTS (OK)
+#define BUF_SIZE    30
+#define PROMPT      1
+#define EXIT        "."
 
 
 
 /*  STRUCT DATA TYPE    :       FlightInfo
-    FIELDS              :       char* flightDest - flight destination
-                                char* flightDate - flight date
+    FIELDS              :       char* flightDest    - flight destination
+                                char* flightDate    - flight date
     DESCRIPTION         :       Data type stores flight information.     
  */
 struct FlightInfo
@@ -24,55 +25,92 @@ struct FlightInfo
 
 
 
+/*  LINKED LIST DATA STRUCTURE NODE
+    -------------------------------
+    STRUCT DATA TYPE    :       FlightNode
+    FIELDS              :       FlightInfo info     - FlightInfo data type
+                                FlightInfo* next    - FlightInfo pointer to next node in linked list
+*/
+struct FlightNode
+{
+    struct FlightInfo info;
+	struct FlightNode* next;
+};
+
+
+
 // FUNCTION PROTOTYPES
-void clearCR(char* buf);                                                    // clears carriage return
-void fillFlightInfo(FlightInfo* flight, char* destination, char* date);       // allocates and stores memory for flight data
-void printFlightInfo(FlightInfo flights[]);
+void clearCR(char* buf);                                                    
+FlightNode* createFlightNode(char* destination, char* date);                
+void printFlightInfo(FlightNode* head);                                     
+void freeMemory(FlightNode* head);                                          
+
 
 
 int main(void)
 {
-    // initialize variables
-    int i = 0;                                  // counter
-    char inputDest[BUF_SIZE];                   // c-string for destination
-    char inputDate[BUF_SIZE];                   // c-string for date
-    FlightInfo flights[LOOP_AMT];               // array of FlightInfo
-    FlightInfo* structPointer = NULL;           // struct pointer
-    structPointer = flights;                    // struct pointer points to first element of array
+    // identify variables
+    FlightNode* head = NULL;                            // head pointer
+    FlightNode* ptr = NULL;                             // traversing node pointer
+    FlightNode* newNode = NULL;                         // pointer to new node
+    char inputDest[BUF_SIZE];                           // string for destination
+    char inputDate[BUF_SIZE];                           // string for date
 
-    // prompt user for flights
-    while (i < LOOP_AMT)
+    while (PROMPT)
     {
-        printf("Enter a flight destination: "); // destination prompt
-        fgets(inputDest, BUF_SIZE, stdin);      // obtain user input
-        clearCR(inputDest);                     // clear carriage return
-        
+        printf("Enter a flight destination: ");         // destination prompt
+        fgets(inputDest, BUF_SIZE, stdin);              // obtain user input
+        clearCR(inputDest);                             // clear carriage return
+
+        // user wants to exit?
+		if (strcmp(inputDest, EXIT) == 0)
+		{
+			break;	                                    // quit getting flight info
+		}
+
         // date prompt
-        printf("Enter a flight date: ");        // date prompt
-        fgets(inputDate, BUF_SIZE, stdin);      // obtain user input
-        clearCR(inputDate);                     // clear carriage return
+        printf("Enter a flight date: ");                // date prompt
+        fgets(inputDate, BUF_SIZE, stdin);              // obtain user input
+        clearCR(inputDate);                             // clear carriage return
 
-        // allocate and fill memory
-        fillFlightInfo(structPointer, inputDest, inputDate);
+        // user wants to exit?
+		if (strcmp(inputDate, EXIT) == 0)
+		{
+			break;	                                    // quit getting flight info
+		}
 
-        printf("\n");
+        // allocate memory for new node
+        newNode = createFlightNode(inputDest, inputDate);
 
-        structPointer++;                        // increment position of struct pointer
-        i++;                                    // increment loop counter
+        // memory allocation failed?
+        if (newNode == NULL)
+        {
+            break;
+        }
+
+        // empty linked list?
+        if (head == NULL)
+        {
+            head = newNode;
+        }
+        else
+        {
+            ptr = head;
+            while (ptr->next != NULL)
+            {
+                ptr = ptr->next;
+            }
+
+            // insert node to the end of the LL
+			ptr->next = newNode;
+        }
     }
 
-    i = 0;                                      // reset counter
+    // display flights in linked list
+    printFlightInfo(head);
 
-    // display flights and their data
-    printFlightInfo(flights);
-
-    // free memory after its use
-    for (i = 0; i < LOOP_AMT; ++i)
-    {
-        free(flights[i].flightDest);
-        free(flights[i].flightDate);
-        printf("Flight info deleted\n");
-    }
+    // free allocated memory
+    freeMemory(head);
 
     return 0;
 }
@@ -104,46 +142,94 @@ void clearCR(char* buf)
     Description:    This function allocates two blocks of memory to
 				    contain the destination string and date string.
 */
-void fillFlightInfo(FlightInfo* flight, char* destination, char* date)
+FlightNode* createFlightNode(char* destination, char* date)
 {
-    // block of memory = (typecast)malloc(length of string multiplied by size of data type + 1 for \0)
-    flight->flightDest = (char*)malloc(strlen(destination) * sizeof(char) + 1);
+    // initialize node to be inserted to linked list
+    FlightNode* node = NULL;                
 
-    if (flight->flightDest == NULL)
-    {
-        printf("Out of memory.\n");
-    }
-    else
-    {
-        // put contents of string in struct variable field
-        strcpy(flight->flightDest, destination);
-    }
+    // allocate memory for node
+	node = (FlightNode*)malloc(sizeof(FlightNode));
 
-    flight->flightDate = (char*)malloc(strlen(date) * sizeof(char) + 1);
-
-    if (flight->flightDate == NULL)
+    if (node == NULL)
 	{
 		printf("Out of memory\n");
+		return NULL;
+	}
+
+    node->next = NULL;
+
+    // allocate memory for destination field
+	node->info.flightDest = (char*)malloc(strlen(destination) * sizeof(char) + 1);
+
+    if (node->info.flightDest == NULL)
+	{
+		printf("Out of memory\n");
+        return NULL;
 	}
 	else
 	{
-		strcpy(flight->flightDate, date);
+		strcpy(node->info.flightDest, destination);
 	}
+
+    // allocate memory for the date field
+	node->info.flightDate = (char*)malloc(strlen(date) * sizeof(char) + 1);
+
+	if (node->info.flightDate == NULL)
+	{
+		printf("Out of memory\n");
+        return NULL;
+	}
+	else
+	{
+		strcpy(node->info.flightDate, date);
+	}
+
+    return node;
 }
 
 
 
 /*
     Function:       printFlightInfo()
-    Parameters:     FlightInfo* flights - array of FlightInfo 
+    Parameters:     FlightInfo* head - head of linked list of flights
     Return Value:   NONE
-    Description:    This function displays data stored in the array of FlightInfo
+    Description:    This function displays data stored in the list of FlightNodes
 */
-void printFlightInfo(struct FlightInfo flights[])
+void printFlightInfo(FlightNode* head)
 {
-    for (int i = 0; i < LOOP_AMT; ++i)
+    FlightNode* ptr = head;
+
+    while (ptr != NULL)
     {
-        // use '-' for left-justification
-        printf("%-35s %-35s\n", flights[i].flightDest, flights[i].flightDate);
+        printf("%-35s %-35s\n", ptr->info.flightDest, ptr->info.flightDate);
+        ptr = ptr->next;
     }
 }
+
+
+
+/*
+    Function:       freeMemory()
+    Parameters:     FlightInfo* head - head of linked list of flights
+    Return Value:   NONE
+    Description:    This function displays data stored in the list of FlightNodes
+*/
+void freeMemory(FlightNode* head)
+{
+    FlightNode* curr = NULL;
+    FlightNode* ptr = head;
+
+    while (ptr != NULL)
+    {
+        // first, save the current cell
+		curr = ptr;
+		// next, move to the next cell
+		ptr = ptr->next;
+		// can't free curr before getting the next pointer
+		free(curr->info.flightDest);		// free up space in that field
+		free(curr->info.flightDate);
+		free(curr);
+    }
+}
+
+
